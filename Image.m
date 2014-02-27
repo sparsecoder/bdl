@@ -3,6 +3,9 @@ properties
     img
     N
     n1,n2,d1,d2
+    Mu
+    Sigma
+    patches
 end
 
 methods
@@ -16,21 +19,29 @@ methods
             if all(isfield(param, {'d1','d2'})), o.d1 = param.d1; o.d2 = param.d2;
             else o.d1 = 1; o.d2 = 1; end
         else
-            o.n1 = 8; o.n2 = 8; o.d1 = 1; o.d2 = 1;
+            o.n1 = 8; o.n2 = 8; o.d1 = 8; o.d2 = 8;
         end
+        
+        o.patch();
+        o.normalize();
     end
     
-    
-    
-    function patches = patch(o)
+    function patch(o)
         [I,J] = o.getCoords();
         K = length(I);
         
-        patches = zeros(o.n1*o.n2*o.N(3), K);
+        o.patches = zeros(o.n1*o.n2*o.N(3), K);
         for k=1:K
             p = o.img(I(k):I(k)+o.n1-1, J(k):J(k)+o.n2-1, :);
-            patches(:,k) = p(:);
+            o.patches(:,k) = p(:);
         end
+    end
+    
+    function normalize(o)
+        o.Mu = mean(o.patches);
+        bsxfun(@minus, o.patches, o.Mu);
+        o.Sigma = var(o.patches);
+        bsxfun(@rdivide, o.patches, o.Sigma);
     end
     
     function img = recon(o, patches)
