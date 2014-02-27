@@ -19,7 +19,7 @@ methods
             if all(isfield(param, {'d1','d2'})), o.d1 = param.d1; o.d2 = param.d2;
             else o.d1 = 1; o.d2 = 1; end
         else
-            o.n1 = 8; o.n2 = 8; o.d1 = 8; o.d2 = 8;
+            o.n1 = 8; o.n2 = 8; o.d1 = 1; o.d2 = 1;
         end
         
         o.patch();

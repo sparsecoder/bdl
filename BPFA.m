@@ -2,6 +2,7 @@ classdef BPFA<handle
 properties
     Y
     D,Z,S
+    X,A,R
     pie, gs, ge
     P,N,K
     a,b,c,d,e,f
@@ -17,13 +18,16 @@ methods
         o.D = o.Y(:,randperm(o.N,o.K));
         o.S = o.D'*o.Y;
         o.Z = o.S-mean(o.S(:)) > 0;
+        o.A = o.S.*o.Z;
+        o.X = o.D*o.A;
+        o.R = o.Y - o.X;
         o.pie = ones(o.K,1)/o.K;
         o.gs = 1;
         o.ge = 1;
         
         for i=1:100
             o.sample();
-            fprintf('%d\n',i)
+            fprintf('%d: %f\n',i, norm(o.R, 'fro'))
         end
         
     end
@@ -35,17 +39,20 @@ methods
         o.sample_pie();
         o.sample_gs();
         o.sample_ge();
+        
+        o.A = o.S.*o.Z;
+        o.X = o.D*o.A;
+        o.R = o.Y - o.X;
     end
     
     function sample_D(o)
         SigmaD = zeros(1,o.P,o.K) + o.P;
-        a = o.alpha();
         MuD = zeros(size(o.D));
         for k=1:o.K
             SigmaD(:,:,k) = SigmaD(:,:,k)...
-                + o.ge*sum(a(:,k).^2)*ones(1,o.P);
+                + o.ge*sum(o.A(:,k).^2)*ones(1,o.P);
             
-            MuD(:,k) = o.ge*SigmaD(:,:,k).*(a(k,:)*o.Xk(k)');
+            MuD(:,k) = o.ge*SigmaD(:,:,k).*(o.A(k,:)*o.Xk(k)');
         end
         
         SigmaD = 1./SigmaD;
@@ -60,6 +67,7 @@ methods
         end
         p1 = bsxfun(@times, exp( -o.ge/2*(o.S.*p1) ), o.pie);
         den = bsxfun(@plus, p1, 1-o.pie);
+        
         o.Z = binornd(1,p1./den);
     end
     
@@ -83,7 +91,7 @@ methods
     end
     
     function sample_ge(o)
-        o.ge = gamrnd(o.e, o.f + norm(o.Y - o.D*o.alpha(), 'fro')^2/2);
+        o.ge = gamrnd(o.e, o.f + norm(o.R, 'fro')^2/2);
     end
     
     function dtd = DTD(o)
@@ -97,14 +105,9 @@ methods
     function sts = STS(o)
         sts = dot(o.S,o.S);
     end
-    
-    function a = alpha(o)
-        a = o.S.*o.Z;
-    end
-    
+
     function xk = Xk(o,k)
-        a = o.alpha();
-        xk = o.Y - o.D*a + o.D(:,k)*a(k,:);
+        xk = o.R + o.D(:,k)*o.A(k,:); %!!! this is 1x1
     end
 end
 
