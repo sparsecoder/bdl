@@ -1,19 +1,28 @@
 P = 7;
 K = 4;
-N = 50;
+N = 500;
 
 D = normalize(randn(P,K));
-Z = BeBP(K,1500,1);
+Z = BeBP(K,N,1);
 Z = Z(:,1:N);
 S = normalize(randn(size(Z)));
 
-X = D*(S.*Z) + 10e-4*randn(P,N);
+X = D*(S.*Z) + 10e-6*randn(P,N);
 
 bpfa = BPFA(X,K);
-% bpfa.D = D;
-% bpfa.sampleD = false;
-bpfa.S = S;
-bpfa.Z = Z;
-bpfa.sampleA = false;
 
-bpfa.learn(300);
+% D works
+bpfa.D = D;
+bpfa.sampleD = false;
+
+% S kind of works
+bpfa.S = S;
+bpfa.sampleZ = false;
+
+% Z doesnt really work
+% bpfa.Z = Z;
+% bpfa.pie = sum(Z)/K;
+% bpfa.sampleZ = false;
+
+
+bpfa.learn(100);

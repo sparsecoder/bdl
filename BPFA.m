@@ -7,7 +7,7 @@ properties
     P,N,K
     a,b,c,d,e,f
     
-    sampleA, sampleD
+    sampleA, sampleD, sampleS, sampleZ
 end
 
 methods
@@ -15,7 +15,7 @@ methods
         o.Y = Y;
         [o.P, o.N] = size(o.Y);
         o.K = K;
-        o.a = o.N*o.K; o.b = o.a*(1/0.7 + 0.70);
+        o.a = o.K; o.b = o.a;
         o.c = 1e-6; o.d = 1e-6; o.e = 1e-6; o.f = 1e-6;
         
         o.D = normalize(o.Y(:,randperm(o.N,o.K)));
@@ -23,17 +23,18 @@ methods
         o.Z = o.S > mean(o.S(:)) - 1.8*std(o.S(:));
         o.Aup();
         o.pie = ones(o.K,1)/o.K;
-        o.gs = 10^3;
-        o.ge = 10^3;
+        o.gs = 1e3;
+        o.ge = 1e3;
         
         o.sampleA = true; o.sampleD = true;
+        o.sampleS = true; o.sampleZ = true;
     end
     
     function learn(o, T)
         fprintf('i: err \t\tgs\t\tge\n');
         for i=1:T
             o.sample();
-            fprintf('%d: %f\t%f\t%f\n',i, o.err(), 1/o.gs, 1/o.ge)
+            fprintf('%d: %e\t%e\t%e\n',i, o.err(), 1/o.gs^.5, 1/o.ge^.5)
         end
     end
     
@@ -44,16 +45,17 @@ methods
     function sample(o)
         if o.sampleD
             o.sample_D();
+            o.Xup();
         end
         
         if o.sampleA
-            o.sample_Z();
+            if o.sampleZ, o.sample_Z(); end
             o.Aup();
-            o.sample_S();
+            if o.sampleS, o.sample_S(); end
         end
         o.Aup();
         
-        o.sample_pie();
+%         o.sample_pie();
         o.sample_gs();
         o.sample_ge();
     end
@@ -125,11 +127,11 @@ methods
     end
     
     function sample_gs(o)
-        o.gs = gamrnd(o.c + o.K*o.N/2, 2/(o.d + sum(dot(o.S,o.S))));
+        o.gs = gamrnd(o.c + o.K*o.N/2, o.d + 2/sum(dot(o.S,o.S)));
     end
     
     function sample_ge(o)
-        o.ge = gamrnd(o.e + o.P*o.N, 2/(o.f + norm(o.R, 'fro')^2));
+        o.ge = gamrnd(o.e + o.P*o.N, o.f + 2/norm(o.R, 'fro')^2);
     end
     
     function dtxk = DTXK(o,k)
