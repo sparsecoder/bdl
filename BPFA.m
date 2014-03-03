@@ -8,6 +8,7 @@ properties
     a,b,c,d,e,f
     
     sampleA, sampleD, sampleS, sampleZ
+
 end
 
 methods
@@ -24,8 +25,8 @@ methods
         o.Aup();
         o.pie = sum(o.Z,2)/o.N;
         %o.pie = ones(o.K,1)/o.K;
-        o.gs = 1e6;
-        o.ge = 1e6;
+        o.gs = 1e2;
+        o.ge = 1e2;
         
         o.sampleA = true; o.sampleD = true;
         o.sampleS = true; o.sampleZ = true;
@@ -35,7 +36,7 @@ methods
         fprintf('i: err \t\tgs\t\tge\n');
         for i=1:T
             o.sample();
-            fprintf('%d: %e\t%e\t%e\n',i, o.err(), 1/o.gs^.5, 1/o.ge^.5)
+            fprintf('%d: %e\t%e\t%e\n',i, o.err(), 1/o.gs, 1/o.ge)
         end
     end
     
@@ -128,7 +129,6 @@ methods
     end
     
     function sample_gs(o)
-        2/sum(o.S(:).^2)
         o.gs = gamrnd(o.c + o.K*o.N/2, o.d + 2/sum(o.S(:).^2));
     end
     
