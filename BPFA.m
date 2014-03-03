@@ -13,18 +13,19 @@ end
 methods
     function o = BPFA(Y, K)
         o.Y = Y;
-        [o.P, o.N] = size(o.Y);
+       [o.P, o.N] = size(o.Y);
         o.K = K;
-        o.a = o.K; o.b = o.a;
+        o.a = o.K; o.b = 1;
         o.c = 1e-6; o.d = 1e-6; o.e = 1e-6; o.f = 1e-6;
         
         o.D = normalize(o.Y(:,randperm(o.N,o.K)));
         o.S = o.D\o.Y;
         o.Z = o.S > mean(o.S(:)) - 1.8*std(o.S(:));
         o.Aup();
-        o.pie = ones(o.K,1)/o.K;
-        o.gs = 1e3;
-        o.ge = 1e3;
+        o.pie = sum(o.Z,2)/o.N;
+        %o.pie = ones(o.K,1)/o.K;
+        o.gs = 1e6;
+        o.ge = 1e6;
         
         o.sampleA = true; o.sampleD = true;
         o.sampleS = true; o.sampleZ = true;
@@ -63,7 +64,7 @@ methods
     function Xup(o)
         o.X = o.D*o.A;
         o.R = o.Y - o.X;
-        o.DTD = dot(o.D,o.D)';
+        o.DTD = sum(o.D.^2)';
     end
     function Aup(o)
         o.A = o.S.*o.Z;
@@ -127,7 +128,8 @@ methods
     end
     
     function sample_gs(o)
-        o.gs = gamrnd(o.c + o.K*o.N/2, o.d + 2/sum(dot(o.S,o.S)));
+        2/sum(o.S(:).^2)
+        o.gs = gamrnd(o.c + o.K*o.N/2, o.d + 2/sum(o.S(:).^2));
     end
     
     function sample_ge(o)
