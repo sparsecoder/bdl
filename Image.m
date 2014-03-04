@@ -13,6 +13,7 @@ methods
         if isnumeric(img), o.img = img; else o.img = imread(img); end
         o.img = im2double(o.img);
         o.N = size(o.img);
+        if size(o.N==2), o.N(3) = 1; end
         if nargin>1
             if all(isfield(param, {'n1','n2'})), o.n1 = param.n1; o.n2 = param.n2;
             else o.n1 = 8; o.n2 = 8; end
@@ -23,7 +24,7 @@ methods
         end
         
         o.patch();
-        o.normalize();
+        % o.normalize();
     end
     
     function patch(o)
