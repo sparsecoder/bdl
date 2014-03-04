@@ -1,6 +1,6 @@
 P = 16;
 K = 128;
-N = 100000;
+N = 1000;
 
 D = normalize(randn(P,K));
 Z = BeBP(K,N,1);
@@ -20,7 +20,7 @@ bpfa = BPFA(X,K);
 
 % S kind of works
 bpfa.S = S;
-%bpfa.sampleS = false;
+bpfa.sampleS = false;
 
 % Z doesnt really work
 bpfa.Z = Z;

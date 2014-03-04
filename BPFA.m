@@ -1,6 +1,7 @@
 classdef BPFA<handle
 properties
     Y
+    H,HTH
     D,Z,S
     X,A,R,DTD
     pie, gs, ge
@@ -19,6 +20,9 @@ methods
         o.a = o.K; o.b = 1;
         o.c = 1e-6; o.d = 1e-6; o.e = 1e-6; o.f = 1e-6;
         
+        o.H = speye(o.P);
+        o.HTH = diag(o.H);
+
         o.D = normalize(o.Y(:,randperm(o.N,o.K)));
         o.S = o.D\o.Y;
         o.Z = o.S > mean(o.S(:)) - 1.8*std(o.S(:));
@@ -73,13 +77,19 @@ methods
     end
     
     function sample_D(o)
-        SigD = 1 ./( o.P + o.ge*sum(o.A.^2,2)*ones(1,o.P) );
+        SigD = zeros(size(o.D));
         MuD = zeros(size(o.D));
         for k=1:o.K
-            MuD(:,k) = o.ge*SigD(k,:).*(o.A(k,:)*o.Xk(k)');
+            xk = o.Xk(k);
+            for i=1:o.N
+                SigD(:,k) = SigD(:,k) + o.A(k,i)^2*o.HTH; 
+                MuD(:,k) = MuD(:,k) + o.A(k,i)*xk(:,i);
+            end
+            SigD = 1./(o.P + o.ge*SigD);
+            MuD = o.ge*SigD.*MuD;
         end
         
-        o.D = mvnrnd(MuD', reshape(SigD, [1 size(SigD')]))';
+        o.D = mvnrnd(MuD, reshape(SigD, [1 size(SigD)]))';
     end
     
     function sample_Z(o)
@@ -133,7 +143,7 @@ methods
     end
     
     function sample_ge(o)
-        o.ge = gamrnd(o.e + o.P*o.N, o.f + 2/norm(o.R, 'fro')^2);
+        o.ge = gamrnd(o.e + o.P*o.N/2, o.f + 2/norm(o.R, 'fro')^2);
     end
     
     function dtxk = DTXK(o,k)
