@@ -11,9 +11,10 @@ end
 methods
     function o = Image(img, param)
         if isnumeric(img), o.img = img; else o.img = imread(img); end
-        o.img = im2double(o.img);
+        o.img = imresize(o.img, [nan, 300]);
         o.N = size(o.img);
-        if size(o.N==2), o.N(3) = 1; end
+        o.img = max(0,min(1, im2double(o.img) + 0.1*randn(o.N) ));
+        if length(o.N)==2, o.N(3) = 1; end
         if nargin>1
             if all(isfield(param, {'n1','n2'})), o.n1 = param.n1; o.n2 = param.n2;
             else o.n1 = 8; o.n2 = 8; end
