@@ -16,11 +16,11 @@ methods
         o.Y = Y;
         [o.P, o.N] = size(o.Y);
         o.K = K;
-        o.a = o.K; o.b = 1;
+        o.a = o.K; o.b = o.N^2;
         o.c = 1e-6; o.d = 1e-6; o.e = 1e-6; o.f = 1e-6;
         
         o.D = normalize(o.Y(:,randperm(o.N,o.K)));
-        o.S = o.D\o.Y;
+        o.S = o.D'*o.Y;
         o.Z = o.S > mean(o.S(:)) - 1.8*std(o.S(:));
         o.Aup();
         o.pie = min(0.99999, sum(o.Z,2)/o.N);
@@ -46,14 +46,11 @@ methods
     function sample(o)
         if o.sampleD
             o.sample_D();
-            o.err()
         end
         
         if o.sampleA
             if o.sampleS, o.sample_S(); end
-                o.err()
             if o.sampleZ, o.sample_Z(); end
-                o.err()
         end
         
         o.sample_pie();

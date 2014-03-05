@@ -1,6 +1,7 @@
 classdef Image<handle
 properties
     img
+    clean
     N
     n1,n2,d1,d2
     Mu
@@ -13,7 +14,8 @@ methods
         if isnumeric(img), o.img = img; else o.img = imread(img); end
         o.img = imresize(o.img, [nan, 300]);
         o.N = size(o.img);
-        o.img = max(0,min(1, im2double(o.img) + 0.1*randn(o.N) ));
+        o.clean = im2double(o.img);
+        o.img = max(0,min(1, o.clean + 0.1*randn(o.N) ));
         if length(o.N)==2, o.N(3) = 1; end
         if nargin>1
             if all(isfield(param, {'n1','n2'})), o.n1 = param.n1; o.n2 = param.n2;
@@ -46,7 +48,7 @@ methods
         bsxfun(@rdivide, o.patches, o.Sigma);
     end
     
-    function img = recon(o, patches)
+    function img = recon(o, patches, lambda)
         [I,J] = o.getCoords();
         img = zeros(o.N);
         w = zeros(o.N);
@@ -60,6 +62,9 @@ methods
         end
 
         img = img ./ w;
+        if nargin>2
+            img = img + lambda*o.img;
+        end
     end
     
     function [I,J] = getCoords(o,I,J)
