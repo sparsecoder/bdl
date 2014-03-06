@@ -15,7 +15,7 @@ methods
         o.img = imresize(o.img, [nan, 300]);
         o.N = size(o.img);
         o.clean = im2double(o.img);
-        o.img = max(0,min(1, o.clean + 0.1*randn(o.N) ));
+        o.img = max(0,min(1, o.clean + 0*randn(o.N) ));
         if length(o.N)==2, o.N(3) = 1; end
         if nargin>1
             if all(isfield(param, {'n1','n2'})), o.n1 = param.n1; o.n2 = param.n2;

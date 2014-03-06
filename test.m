@@ -1,4 +1,4 @@
-P = 16;
+P = 32;
 
 D = normalize([dct([eye(P) 0.05*randn(P)]) eye(P)]);
 K = size(D,2);
@@ -6,14 +6,14 @@ Z = BeBP(K,100,1);
 N = size(Z,2);
 %Z = ones(K,N);
 S = randn(size(Z));
-X = D*(S.*Z) + 1e-2*randn(P,N);
+X = D*(S.*Z) + 0*randn(P,N);
 
 
-%img = imread('skyline.jpg');
-%img = 0.2989*img(:,:,1) + 0.5870*img(:,:,2) + 0.1140*img(:,:,3);
-%img = Image(img);
+img = imread('skyline.jpg');
+img = 0.2989*img(:,:,1) + 0.5870*img(:,:,2) + 0.1140*img(:,:,3);
+img = Image(img);
 
-bpfa = BPFA(X, K);
+bpfa = BPFA(img.patches, 128);
 
 % D works
 %bpfa.D = D;
@@ -28,4 +28,4 @@ bpfa = BPFA(X, K);
 %bpfa.sampleZ = false;
 %bpfa.sampleA = false;
     
-bpfa.learn(100);
+bpfa.learn(1000);
