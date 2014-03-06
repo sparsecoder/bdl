@@ -20,7 +20,7 @@ methods
         o.a = o.K; o.b = o.N;
         o.c = 1e-6; o.d = 1e-6; o.e = 1e-6; o.f = 1e-6;
         
-        o.D = normalize(o.Y(:,randperm(o.N,o.K)));
+        o.D = o.Y(:,randperm(o.N,o.K));
         o.DTD = sum(o.D.^2);
         o.S = o.D'*o.Y;
         o.Z = o.S > mean(o.S(:)) + std(o.S(:));
@@ -29,7 +29,7 @@ methods
         o.R = o.Y - o.X;
         o.pie = min(0.99999, sum(o.Z,2)/o.N);
         o.gs = 1;
-        o.ge = 1;
+        o.ge = 1e8;
     end
     
     function learn(o, T)
@@ -44,7 +44,7 @@ methods
             o.sample();
             t=t+toc;
             if o.verbose
-                fprintf('%d (%f): %e\t%e\t%e\t%e\n',
+                fprintf('%d (%f): %e\t%e\t%e\t%e\n',...
                   i, t, o.err(), 1/o.gs, 1/o.ge, mean(sum(o.Z)/o.K) )
             end
         end
@@ -56,7 +56,7 @@ methods
     
     function sample(o)
         if o.sampleD, o.sample_D(); end
-        
+
         if o.sampleA
             if o.sampleS, o.sample_S(); end
             if o.sampleZ, o.sample_Z(); end

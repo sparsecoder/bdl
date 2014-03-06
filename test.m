@@ -8,12 +8,9 @@ N = size(Z,2);
 S = randn(size(Z));
 X = D*(S.*Z) + 0*randn(P,N);
 
+img = Image('texture.jpg');
 
-img = imread('skyline.jpg');
-img = 0.2989*img(:,:,1) + 0.5870*img(:,:,2) + 0.1140*img(:,:,3);
-img = Image(img);
-
-bpfa = BPFA(img.patches, 128);
+bpfa = BPFA(img.patches, 256);
 
 % D works
 %bpfa.D = D;
@@ -28,4 +25,4 @@ bpfa = BPFA(img.patches, 128);
 %bpfa.sampleZ = false;
 %bpfa.sampleA = false;
     
-bpfa.learn(1000);
+bpfa.learn(2500);

@@ -12,7 +12,7 @@ end
 methods
     function o = Image(img, param)
         if isnumeric(img), o.img = img; else o.img = imread(img); end
-        o.img = imresize(o.img, [nan, 300]);
+       % o.img = imresize(o.img, [nan, 300]);
         o.N = size(o.img);
         o.clean = im2double(o.img);
         o.img = max(0,min(1, o.clean + 0*randn(o.N) ));
