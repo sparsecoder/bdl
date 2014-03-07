@@ -1,28 +1,23 @@
-P = 32;
+P = 16;
 
-D = normalize([dct([eye(P) 0.05*randn(P)]) eye(P)]);
+D = normalize(binornd(255,0.5,P,64)/255);
 K = size(D,2);
 Z = BeBP(K,100,1);
 N = size(Z,2);
 %Z = ones(K,N);
 S = randn(size(Z));
-X = D*(S.*Z) + 0*randn(P,N);
+X = D*(S.*Z);
+Y = X + 1e-1*randn(P,N);
 
-img = Image('texture.jpg');
+img = Image('skyline.jpg');
 
-bpfa = BPFA(img.patches, 256);
+bpfa = BPFA(Y, X, K);
+%bpfa = BPFA(img.patches, img.patches0, 96);
 
-% D works
-%bpfa.D = D;
-%bpfa.sampleD = false;
+%bpfa.D = D; bpfa.sampleD = false;
 
-% S kind of works
-%bpfa.S = S;
-%bpfa.sampleS = false;
+%bpfa.S = S; bpfa.sampleS = false;
+bpfa.Z = Z; bpfa.sampleZ = false;
 
-% Z doesnt really work
-%bpfa.Z = Z;
-%bpfa.sampleZ = false;
-%bpfa.sampleA = false;
-    
-bpfa.learn(2500);
+bpfa.init(bpfa)   
+bpfa.learn(100);
