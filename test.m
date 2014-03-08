@@ -1,23 +1,29 @@
 P = 16;
+N = 1000;
 
-D = normalize(binornd(255,0.5,P,64)/255);
+Z = BeBP(N,3,1)';
+K = size(Z,1);
+D = normalize(binornd(255,0.5,P,K)/255);
 K = size(D,2);
-Z = BeBP(K,100,1);
-N = size(Z,2);
 %Z = ones(K,N);
 S = randn(size(Z));
 X = D*(S.*Z);
-Y = X + 1e-1*randn(P,N);
+eps = 0.4;
+Y = normalize(X + eps^2*randn(P,N));
+X = normalize(X);
 
 img = Image('skyline.jpg');
 
 bpfa = BPFA(Y, X, K);
 %bpfa = BPFA(img.patches, img.patches0, 96);
 
-%bpfa.D = D; bpfa.sampleD = false;
+bpfa.D = D; bpfa.sampleD = false;
+bpfa.ge = 1/eps;
 
-%bpfa.S = S; bpfa.sampleS = false;
-bpfa.Z = Z; bpfa.sampleZ = false;
+bpfa.S = S; bpfa.sampleS = false;
+bpfa.gs = 1;
+%bpfa.Z = Z; bpfa.sampleZ = false;
+%bpfa.pie = sum(Z,2)/N;
 
 bpfa.init(bpfa)   
 bpfa.learn(100);
