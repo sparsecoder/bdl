@@ -75,7 +75,7 @@ methods
     function sample_D(o,k)
         o.check();
         A = o.S.*o.Z;
-        sig = (o.P + o.ge*sum(o.A(k,:).^2)*ones(o.P,1)).^-1;
+        sig = (o.P + o.ge*sum(A(k,:).^2)*ones(o.P,1)).^-1;
         xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
         mu = o.ge*sig.*(xk*A(k,:)');
         o.D(:,k) = mvnrnd(mu,sig);
