@@ -2,7 +2,6 @@ classdef BPFA<handle
 properties
     Y
     D,Z,S
-    X,A,R
     X0
     pie, gs, ge
     P,N,K
@@ -33,20 +32,21 @@ methods
         if isfield(mats, 'D'), o.D = mats.D; end
         if isfield(mats, 'S'), o.S = mats.S; end
         if isfield(mats, 'Z'), o.Z = mats.Z; end
-             
-        o.A = o.S.*o.Z;
-        o.X = o.D*o.A;
-        o.R = o.Y - o.X;
+        o.Z = logical(o.Z);
+          
         o.pie = min(0.99999, sum(o.Z,2)/o.N);
-        o.gs = 1e-3;
-        o.ge = 0.1;
+        o.gs = 1/cov(o.Z(:).*o.S(:));
+        %o.sample_gs();
+        Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
+        o.sample_ge();
+        o.ge = 1;
     end
     
     function sample(o)
         for k=1:o.K; % randperm(o.K);
             if o.sampleD, o.sample_D(k); end
         end
-        o.print(); fprintf('\n');
+        %o.print(); fprintf('\n');
 
         if o.sampleA
             for k=1:o.K; % randperm(o.K);
@@ -56,7 +56,8 @@ methods
             for k=1:o.K; % randperm(o.K);
                 if o.sampleZ, o.sample_Z(k); end
             end
-            %o.print(); fprintf('\n');
+            o.print(); fprintf('\n');
+        %fprintf('\n');
         end
         %end
         fprintf('\n');
@@ -66,12 +67,6 @@ methods
         o.sample_ge();
     end
 
-    function check(o)
-        if any(isnan([o.D(:); o.S(:); o.Z(:)]))
-            error('nan found');
-        end
-    end
-
     function sample_D(o,k)
         o.check();
         A = o.S.*o.Z;
@@ -79,9 +74,6 @@ methods
         xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
         mu = o.ge*sig.*(xk*A(k,:)');
         o.D(:,k) = mvnrnd(mu,sig);
-
-        o.X = o.D*A;
-        o.R = o.Y - o.X;
     end
     
     function sample_S(o,k)
@@ -89,15 +81,11 @@ methods
         dtd = sum(o.D(:,k).^2);
         sig = (o.gs + o.ge*o.Z(k,:)*dtd).^-1;
         mu = zeros(1,o.N);
-        I = find(o.Z(k,:));
-        A = o.S(:,I).*o.Z(:,I);
-        xk = o.Y(:,I) - o.D*A + o.D(:,k)*A(k,:);
+        A = o.S(:,o.Z(k,:)).*o.Z(:,o.Z(k,:));
+        xk = o.Y(:,o.Z(k,:)) - o.D*A + o.D(:,k)*A(k,:);
         dtxk = o.D(:,k)'*xk;
-        mu(I) = o.ge*sig(I).*dtxk;
+        mu(o.Z(k,:)) = o.ge*sig(o.Z(k,:)).*dtxk;
         o.S(k,:) = randn(1,o.N).*sig + mu;
-
-        o.X = o.D*(o.S.*o.Z);
-        o.R = o.Y - o.X;
     end
     
     function sample_Z(o,k)
@@ -108,17 +96,15 @@ methods
         dtxk = o.D(:,k)'*xk;
         p1 = o.pie(k)*exp(-o.ge/2*o.S(k,:).*(o.S(k,:)*dtd - 2*dtxk));
         o.Z(k,:) = berrnd(p1./(1 - o.pie(k) + p1));
-
-        o.X = o.D*(o.S.*o.Z);
-        o.R = o.Y - o.X;
     end
     
     function sample_ge(o)
-        o.ge = gamrnd(o.e + o.P*o.N/2, 1/(o.f + 0.5*sum(o.R(:).^2)));
+        Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
+        o.ge = 1/.16; %gamrnd(o.e + o.P*o.N/2, 1/(o.f + 0.5*sum(Err2(:))) );
     end
     
     function sample_gs(o)
-        o.gs = gamrnd(o.c + o.K*o.N/2, 1/(o.d + 0.5*sum(o.S(:).^2)));
+        o.gs = 1;gamrnd(o.c + nnz(o.Z), 1/(o.d + 0.5*sum((o.Z(:).*o.S(:)).^2)) );
     end
     
     function sample_pie(o)
@@ -126,6 +112,12 @@ methods
         o.pie = betarnd(o.a/o.K + sumz, o.b*(o.K-1)/o.K + o.N - sumz);
     end
     
+    function check(o)
+        if any(isnan([o.D(:); o.S(:)])) %; o.Z(:)])) z is boolean...
+            error('nan found');
+        end
+    end
+
     function learn(o, T)
         if o.verbose
             s = ' ';
@@ -149,7 +141,8 @@ methods
     
     function print(o)
         fprintf('%3.4e ',...
-        [o.psnr(o.R), o.psnr(o.X0-o.X), o.gs^-0.5, o.ge^-0.5, nnz(o.Z)/numel(o.Z)] );
+        [o.psnr(o.Y-o.D*(o.S.*o.Z)), o.psnr(o.X0-o.D*(o.S.*o.Z)),...
+          o.gs^-0.5, o.ge^-0.5, nnz(o.Z)/numel(o.Z)] );
         fprintf('\n');
     end
 
