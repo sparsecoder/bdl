@@ -2,7 +2,7 @@ classdef BPFA<handle
 properties
     Y
     D,Z,S
-    X,A,R,DTD
+    X,A,R
     X0
     pie, gs, ge
     P,N,K
@@ -24,7 +24,6 @@ methods
         o.c = 1e-6; o.d = 1e-6; o.e = 1e-6; o.f = 1e-6;
         
         o.D = o.Y(:,randperm(o.N,o.K));
-        o.DTD = sum(o.D.^2);
         o.S = o.D'*o.Y;
         o.Z = o.S > mean(o.S(:)) + std(o.S(:));
         o.init(o)
@@ -64,21 +63,29 @@ methods
 
         o.sample_pie();
         o.sample_gs();
-        %o.sample_ge();
+        o.sample_ge();
+    end
+
+    function check(o)
+        if any(isnan([o.D(:); o.S(:); o.Z(:)]))
+            error('nan found');
+        end
     end
 
     function sample_D(o,k)
+        o.check();
         A = o.S.*o.Z;
         sig = (o.P + o.ge*sum(o.A(k,:).^2)*ones(o.P,1)).^-1;
         xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
         mu = o.ge*sig.*(xk*A(k,:)');
         o.D(:,k) = mvnrnd(mu,sig);
 
-        o.X = o.D*o.A;
+        o.X = o.D*A;
         o.R = o.Y - o.X;
     end
     
     function sample_S(o,k)
+        o.check();
         dtd = sum(o.D(:,k).^2);
         sig = (o.gs + o.ge*o.Z(k,:)*dtd).^-1;
         mu = zeros(1,o.N);
@@ -94,6 +101,7 @@ methods
     end
     
     function sample_Z(o,k)
+        o.check();
         dtd = sum(o.D(:,k).^2);
         A = o.S.*o.Z;
         xk = o.Y - o.D*A + o.D(:,k)*A(k,:);

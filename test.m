@@ -1,7 +1,7 @@
 P = 16;
 N = 1000;
 
-Z = BeBP(N,3,1)';
+Z = BeBP(N,P/2,1)';
 K = size(Z,1);
 D = normalize(binornd(255,0.5,P,K)/255);
 K = size(D,2);
@@ -9,8 +9,8 @@ K = size(D,2);
 S = randn(size(Z));
 X = D*(S.*Z);
 eps = 0.4;
-Y = normalize(X + eps^2*randn(P,N));
 X = normalize(X);
+Y = X + eps^2*randn(P,N);
 
 img = Image('skyline.jpg');
 
@@ -26,4 +26,4 @@ bpfa.gs = 1;
 %bpfa.pie = sum(Z,2)/N;
 
 bpfa.init(bpfa)   
-bpfa.learn(100);
+bpfa.learn(10);
