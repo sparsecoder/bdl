@@ -81,11 +81,11 @@ methods
         dtd = sum(o.D(:,k).^2);
         sig = (o.gs + o.ge*o.Z(k,:)*dtd).^-1;
         mu = zeros(1,o.N);
-        A = o.S(:,o.Z(k,:)).*o.Z(:,o.Z(k,:));
+        A = o.S(:,o.Z(k,:));
         xk = o.Y(:,o.Z(k,:)) - o.D*A + o.D(:,k)*A(k,:);
         dtxk = o.D(:,k)'*xk;
         mu(o.Z(k,:)) = o.ge*sig(o.Z(k,:)).*dtxk;
-        o.S(k,:) = randn(1,o.N).*sig + mu;
+        o.S(k,:) = randn(1,o.N).*sqrt(sig) + mu;
     end
     
     function sample_Z(o,k)
