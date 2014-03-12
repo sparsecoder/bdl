@@ -24,7 +24,7 @@ methods
         o.img0 = o.img;
 
         o.N = size(o.img);
-        o.img = max(0,min(1, o.img0 + 0.25*randn(o.N) ));
+        o.img = max(0,min(1, o.img0 + 0.2*randn(o.N) ));
 
         if length(o.N)==2, o.N(3) = 1; end
         if nargin>1

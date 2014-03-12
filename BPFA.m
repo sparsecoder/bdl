@@ -100,7 +100,7 @@ methods
     
     function sample_ge(o)
         Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
-        o.ge = 1/.16; %gamrnd(o.e + o.P*o.N/2, 1/(o.f + 0.5*sum(Err2(:))) );
+        o.ge = gamrnd(o.e + o.P*o.N/2, 1/(o.f + 0.5*sum(Err2(:))) );
     end
     
     function sample_gs(o)
