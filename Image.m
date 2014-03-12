@@ -20,7 +20,7 @@ methods
         o.img = o.img - o.Mu;
         o.Sigma = std(o.img(:));
         o.img = o.img/o.Sigma;
-        o.img = imresize(o.img, [nan, 300]);
+        %o.img = imresize(o.img, [nan, 300]);
         o.img0 = o.img;
 
         o.N = size(o.img);
@@ -33,7 +33,7 @@ methods
             if all(isfield(param, {'d1','d2'})), o.d1 = param.d1; o.d2 = param.d2;
             else o.d1 = 1; o.d2 = 1; end
         else
-            o.n1 = 8; o.n2 = 8; o.d1 = 1; o.d2 = 1;
+            o.n1 = 8; o.n2 = 8; o.d1 = 2; o.d2 = 2;
         end
         
         o.patches = o.patch(o.img);

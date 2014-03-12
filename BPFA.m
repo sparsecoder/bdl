@@ -1,7 +1,7 @@
 classdef BPFA<handle
 properties
     Y
-    D,Z,S
+    D,Z,S%,R
     X0
     pie, gs, ge
     P,N,K
@@ -36,30 +36,30 @@ methods
           
         o.pie = min(0.99999, sum(o.Z,2)/o.N);
         o.gs = 1/cov(o.Z(:).*o.S(:));
-        %o.sample_gs();
         Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
-        o.sample_ge();
         o.ge = 1;
+        %o.R = o.Y - o.D*(o.S.*o.Z);
+        o.check();
     end
     
     function sample(o)
+        A = o.S.*o.Z;
         for k=1:o.K; % randperm(o.K);
-            if o.sampleD, o.sample_D(k); end
+            if o.sampleD, o.sample_D(k,A); end
         end
-        %o.print(); fprintf('\n');
+        o.print();
 
         if o.sampleA
             for k=1:o.K; % randperm(o.K);
                 if o.sampleS, o.sample_S(k); end
             end
-            o.print(); fprintf('\n');
+            o.print();
+
             for k=1:o.K; % randperm(o.K);
                 if o.sampleZ, o.sample_Z(k); end
             end
-            o.print(); fprintf('\n');
-        %fprintf('\n');
+            o.print();
         end
-        %end
         fprintf('\n');
 
         o.sample_pie();
@@ -67,9 +67,7 @@ methods
         o.sample_ge();
     end
 
-    function sample_D(o,k)
-        o.check();
-        A = o.S.*o.Z;
+    function sample_D(o,k,A)
         sig = (o.P + o.ge*sum(A(k,:).^2)*ones(o.P,1)).^-1;
         xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
         mu = o.ge*sig.*(xk*A(k,:)');
@@ -77,19 +75,17 @@ methods
     end
     
     function sample_S(o,k)
-        o.check();
         dtd = sum(o.D(:,k).^2);
         sig = (o.gs + o.ge*o.Z(k,:)*dtd).^-1;
+        A = o.S.*o.Z;
+        xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
+        dtxk = o.D(:,k)'*xk(:,o.Z(k,:));
         mu = zeros(1,o.N);
-        A = o.S(:,o.Z(k,:));
-        xk = o.Y(:,o.Z(k,:)) - o.D*A + o.D(:,k)*A(k,:);
-        dtxk = o.D(:,k)'*xk;
         mu(o.Z(k,:)) = o.ge*sig(o.Z(k,:)).*dtxk;
         o.S(k,:) = randn(1,o.N).*sqrt(sig) + mu;
     end
     
     function sample_Z(o,k)
-        o.check();
         dtd = sum(o.D(:,k).^2);
         A = o.S.*o.Z;
         xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
@@ -104,7 +100,9 @@ methods
     end
     
     function sample_gs(o)
-        o.gs = 1;gamrnd(o.c + nnz(o.Z), 1/(o.d + 0.5*sum((o.Z(:).*o.S(:)).^2)) );
+        %o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*sum(o.S(:).^2)) );
+        %o.gs = gamrnd(o.c + nnz(o.Z), 1/(o.d + 0.5*sum((o.Z(:).*o.S(:)).^2)) );
+        o.gs = 1;
     end
     
     function sample_pie(o)
@@ -141,16 +139,16 @@ methods
     
     function print(o)
         fprintf('%3.4e ',...
-        [o.psnr(o.Y-o.D*(o.S.*o.Z)), o.psnr(o.X0-o.D*(o.S.*o.Z)),...
+        [o.rms(o.Y-o.D*(o.S.*o.Z)), o.rms(o.X0-o.D*(o.S.*o.Z)),...
           o.gs^-0.5, o.ge^-0.5, nnz(o.Z)/numel(o.Z)] );
         fprintf('\n');
     end
 
     function e = psnr(o,x)
-        e = 20*log10(255/o.rms(x));
+        e = 20*log10(1/o.rms(x));
     end
     function e = rms(o, x)
-        e = sqrt(mean(sum(x(:).^2))); 
+        e = sqrt(sum(sum(x.^2))/numel(x)); 
     end
     
 end
