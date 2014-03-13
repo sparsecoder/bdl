@@ -1,7 +1,8 @@
 classdef BPFA<handle
 properties
     Y
-    D,Z,S%,R
+    D,Z,S
+    X,A
     X0
     pie, gs, ge
     P,N,K
@@ -22,9 +23,13 @@ methods
         o.a = o.K; o.b = 1;
         o.c = 1e-6; o.d = 1e-6; o.e = 1e-6; o.f = 1e-6;
         
-        o.D = o.Y(:,randperm(o.N,o.K));
+        o.D = o.Y(:,randperm(o.N,2*o.K));
+        [~,ind] = sort(std(o.D),'descend');
+        o.D = o.D(:,ind(1:o.K));
+        displayPatches(o.D); drawnow;
+
         o.S = o.D'*o.Y;
-        o.Z = o.S > mean(o.S(:)) + std(o.S(:));
+        o.Z = o.S > mean(o.S(:)) + 2.5*std(o.S(:));
         o.init(o)
     end
 
@@ -38,60 +43,75 @@ methods
         o.gs = 1/cov(o.Z(:).*o.S(:));
         Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
         o.ge = 1;
-        %o.R = o.Y - o.D*(o.S.*o.Z);
+        o.A = o.S.*o.Z;
+        o.X = o.D*(o.A);
         o.check();
     end
     
-    function sample(o)
-        A = o.S.*o.Z;
-        for k=1:o.K; % randperm(o.K);
-            if o.sampleD, o.sample_D(k,A); end
+    function check(o)
+        if any(isnan([o.D(:); o.S(:)])) %; o.Z(:)])) z is boolean...
+            error('nan found');
         end
-        o.print();
+    end
+
+    function sample(o)
+        k = randperm(o.K);
+        if o.sampleD, o.sample_D(k); end
 
         if o.sampleA
-            for k=1:o.K; % randperm(o.K);
-                if o.sampleS, o.sample_S(k); end
-            end
-            o.print();
-
-            for k=1:o.K; % randperm(o.K);
-                if o.sampleZ, o.sample_Z(k); end
-            end
-            o.print();
+            if o.sampleS, o.sample_S(k); end
+            if o.sampleZ, o.sample_Z(k); end
         end
-        fprintf('\n');
 
         o.sample_pie();
         o.sample_gs();
         o.sample_ge();
     end
 
-    function sample_D(o,k,A)
-        sig = (o.P + o.ge*sum(A(k,:).^2)*ones(o.P,1)).^-1;
-        xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
-        mu = o.ge*sig.*(xk*A(k,:)');
-        o.D(:,k) = mvnrnd(mu,sig);
+    function sample_D(o,K)
+        %sig = bsxfun(@times, o.P + o.ge*sum(o.A'.^2), ones(o.P,o.K)).^-1;
+        sig = (o.P + o.ge*sum(o.A.^2,2)').^-1;
+        for k=K
+            xk = o.Y - o.X + o.D(:,k)*o.A(k,:);
+            mu = o.ge*sig(k).*(xk*o.A(k,:)');
+            d = mvnrnd(mu,sig(k));
+
+            o.X = o.X + (d - o.D(:,k))*o.A(k,:);
+            o.D(:,k) = d;
+        end
     end
     
-    function sample_S(o,k)
-        dtd = sum(o.D(:,k).^2);
-        sig = (o.gs + o.ge*o.Z(k,:)*dtd).^-1;
-        A = o.S.*o.Z;
-        xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
-        dtxk = o.D(:,k)'*xk(:,o.Z(k,:));
-        mu = zeros(1,o.N);
-        mu(o.Z(k,:)) = o.ge*sig(o.Z(k,:)).*dtxk;
-        o.S(k,:) = randn(1,o.N).*sqrt(sig) + mu;
+    function sample_S(o,K)
+        dtd = sum(o.D.^2)';
+        sig = bsxfun(@times, o.gs + o.ge*o.Z, dtd).^-1;
+        for k=K
+            xk = o.Y - o.X + o.D(:,k)*o.A(k,:);
+            dtxk = o.D(:,k)'*xk(:,o.Z(k,:));
+            mu = zeros(1,o.N);
+            mu(o.Z(k,:)) = o.ge*sig(k,o.Z(k,:)).*dtxk;
+            s = randn(1,o.N).*sqrt(sig(k,:)) + mu;
+            
+            a = s.*o.Z(k,:);
+            o.X = o.X + o.D(:,k)*(a - o.A(k,:));
+            o.S(k,:) = s;
+            o.A(k,:) = a;
+        end
     end
     
-    function sample_Z(o,k)
-        dtd = sum(o.D(:,k).^2);
-        A = o.S.*o.Z;
-        xk = o.Y - o.D*A + o.D(:,k)*A(k,:);
-        dtxk = o.D(:,k)'*xk;
-        p1 = o.pie(k)*exp(-o.ge/2*o.S(k,:).*(o.S(k,:)*dtd - 2*dtxk));
-        o.Z(k,:) = berrnd(p1./(1 - o.pie(k) + p1));
+    function sample_Z(o,K)
+        dtd = sum(o.D.^2)';
+        sdtd = bsxfun(@times, o.S.^2, dtd);
+        for k=K
+            xk = o.Y - o.X + o.D(:,k)*o.A(k,:);
+            dtxk = o.D(:,k)'*xk;
+            p1 = o.pie(k)*exp(-o.ge/2*(sdtd(k,:) - 2*o.S(k,:).*dtxk));
+            z = berrnd(p1./(1 - o.pie(k) + p1));
+
+            a = o.S(k,:).*z;
+            o.X = o.X + o.D(:,k)*(a - o.A(k,:));
+            o.Z(k,:) = z;
+            o.A(k,:) = a;
+        end
     end
     
     function sample_ge(o)
@@ -110,12 +130,6 @@ methods
         o.pie = betarnd(o.a/o.K + sumz, o.b*(o.K-1)/o.K + o.N - sumz);
     end
     
-    function check(o)
-        if any(isnan([o.D(:); o.S(:)])) %; o.Z(:)])) z is boolean...
-            error('nan found');
-        end
-    end
-
     function learn(o, T)
         if o.verbose
             s = ' ';
@@ -133,6 +147,8 @@ methods
             if o.verbose
                 fprintf('%4d: %6.0fs\t',i, t);
                 o.print();
+                [~,ind] = sort(sum(o.Z,2),'descend');
+                displayPatches(o.D(:,ind)); drawnow;
             end
         end
     end

@@ -1,5 +1,5 @@
 P = 64;
-N = 1000;
+N = 10000;
 
 Z = BeBP(N,P/2,1)';
 K = size(Z,1);
@@ -15,7 +15,7 @@ Y = X + eps^0.5*randn(P,N);
 img = Image('cookie.jpg');
 
 %bpfa = BPFA(Y, X, K);
-bpfa = BPFA(img.patches, img.patches0, 512);
+bpfa = BPFA(img.patches, img.patches0, 256)
 
 %bpfa.D = D; bpfa.sampleD = false;
 %bpfa.ge = 1/eps;
@@ -26,4 +26,5 @@ bpfa = BPFA(img.patches, img.patches0, 512);
 %bpfa.pie = sum(Z,2)/N;
 
 %bpfa.init(bpfa)   
-bpfa.learn(20);
+bpfa.learn(100);
+

@@ -14,17 +14,22 @@ methods
     function o = Image(img, param)
         if isnumeric(img), o.img = img; else o.img = imread(img); end
 
-        o.img = rgb2gray(o.img);
+        %o.img = rgb2gray(o.img);
         o.img = im2double(o.img);
-        o.Mu = mean(o.img(:));
-        o.img = o.img - o.Mu;
-        o.Sigma = std(o.img(:));
-        o.img = o.img/o.Sigma;
-        %o.img = imresize(o.img, [nan, 300]);
+        o.Mu = 0;
+        %o.img = o.img - o.Mu;
+        o.Sigma = 1;
+        %o.img = double(o.img)/o.Sigma;
+        %s = 100;
+        %if size(o.img,1) > size(o.img,2)
+        %    o.img = imresize(o.img, [nan, s]);
+        %else
+        %    o.img = imresize(o.img, [s, nan]);
+        %end
         o.img0 = o.img;
 
         o.N = size(o.img);
-        o.img = max(0,min(1, o.img0 + 0.2*randn(o.N) ));
+        %o.img = max(0,min(1, o.img0 + 0.01*randn(o.N) ));
 
         if length(o.N)==2, o.N(3) = 1; end
         if nargin>1
@@ -33,7 +38,7 @@ methods
             if all(isfield(param, {'d1','d2'})), o.d1 = param.d1; o.d2 = param.d2;
             else o.d1 = 1; o.d2 = 1; end
         else
-            o.n1 = 8; o.n2 = 8; o.d1 = 2; o.d2 = 2;
+            o.n1 = 8; o.n2 = 8; o.d1 = 1; o.d2 = 1;
         end
         
         o.patches = o.patch(o.img);
