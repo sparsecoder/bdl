@@ -111,16 +111,16 @@ methods
    %         o.S(k,:) = s;
    %         o.A(k,:) = s
    %     end
-            xk = o.Y - o.X + o.D(:,k)*o.A(k,:);
-            dtxk = o.D(:,k)'*xk(:,o.Z(k,:));
+            xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.A(k,o.Z(k,:));
+            dtxk = o.D(:,k)'*xk;
             mu = zeros(1,o.N);
             mu(o.Z(k,:)) = o.ge*sig(k,o.Z(k,:)).*dtxk;
             s = randn(1,o.N).*sqrt(sig(k,:)) + mu;
-
-            a = s.*o.Z(k,:);
-            o.X = o.X + o.D(:,k)*(a - o.A(k,:));
+            if nnz(o.Z(k,:))
+                o.X(:,o.Z(k,:)) = o.X(:,o.Z(k,:)) + o.D(:,k)*(s(o.Z(k,:)) - o.S(k,o.Z(k,:)));
+                o.A(k,o.Z(k,:)) = s(o.Z(k,:));
+            end
             o.S(k,:) = s;
-            o.A(k,:) = a;
         end
     end
     
