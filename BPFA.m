@@ -2,7 +2,7 @@ classdef BPFA<handle
 properties
     Y
     D,Z,S
-    X,A
+    X,A,R
     X0
     pie, gs, ge
     P,N,K
@@ -45,6 +45,7 @@ methods
         o.ge = 1;
         o.A = o.S.*o.Z;
         o.X = o.D*(o.A);
+        o.R = o.Y - o.X;
         o.check();
     end
     
@@ -70,14 +71,23 @@ methods
 
     function sample_D(o,K)
         %sig = bsxfun(@times, o.P + o.ge*sum(o.A'.^2), ones(o.P,o.K)).^-1;
-        sig = (o.P + o.ge*sum(o.A.^2,2)').^-1;
+        %sig = (o.P + o.ge*sum(o.A.^2,2)').^-1;
         for k=K
-            xk = o.Y - o.X + o.D(:,k)*o.A(k,:);
-            mu = o.ge*sig(k).*(xk*o.A(k,:)');
-            d = mvnrnd(mu,sig(k));
+            if nnz(o.Z(k,:))
+                xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.A(k,o.Z(k,:));
+                sig = 1./(o.P + o.ge*sum(o.S(k,o.Z(k,:)).^2));
+                mu = o.ge*sig.*(xk*o.A(k,o.Z(k,:))');
+            else
+                sig = 1/o.P;
+                mu = zeros(o.P,1);
+            end
+            d = mvnrnd(mu,sig);
 
-            o.X = o.X + (d - o.D(:,k))*o.A(k,:);
+            if nnz(o.Z(k,:))
+                o.X(:,o.Z(k,:)) = o.X(:,o.Z(k,:)) + (d - o.D(:,k))*o.A(k,o.Z(k,:));
+            end
             o.D(:,k) = d;
+            %if nnz(o.Z(k,:)), o.R(:,o.Z(k,:)) = o.R(:,o.Z(k,:)) - o.D(:,k)*o.S(k,o.Z(k,:)); end
         end
     end
     
@@ -85,12 +95,28 @@ methods
         dtd = sum(o.D.^2)';
         sig = bsxfun(@times, o.gs + o.ge*o.Z, dtd).^-1;
         for k=K
+   %         sig = o.gs + zeros(1,o.N);
+   %         mu = zeros(1,o.N);
+   %         if nnz(o.Z(k,:))
+   %             xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.A(k,o.Z(k,:));
+   %             dtxk = o.D(:,k)'*xk;
+   %             sig(o.Z(k,:)) = 1/(o.gs + o.ge*dtd(k));
+   %             mu(o.Z(k,:)) = o.ge*sig(o.Z(k,:)).*dtxk;
+   %         else
+   %             sig = 1/o.gs;
+   %         end
+   %         s = randn(1,o.N).*sqrt(sig) + mu;
+   %         
+   %         o.X = o.X + o.D(:,k)*(s - o.S(k,:));
+   %         o.S(k,:) = s;
+   %         o.A(k,:) = s
+   %     end
             xk = o.Y - o.X + o.D(:,k)*o.A(k,:);
             dtxk = o.D(:,k)'*xk(:,o.Z(k,:));
             mu = zeros(1,o.N);
             mu(o.Z(k,:)) = o.ge*sig(k,o.Z(k,:)).*dtxk;
             s = randn(1,o.N).*sqrt(sig(k,:)) + mu;
-            
+
             a = s.*o.Z(k,:);
             o.X = o.X + o.D(:,k)*(a - o.A(k,:));
             o.S(k,:) = s;

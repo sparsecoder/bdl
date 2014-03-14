@@ -8,24 +8,26 @@ properties
     Sigma
     patches
     patches0
+    random
 end
 
 methods
     function o = Image(img, param)
         if isnumeric(img), o.img = img; else o.img = imread(img); end
 
-        %o.img = rgb2gray(o.img);
+        o.img = rgb2gray(o.img);
+        %o.img = im2double(o.img(1:1024,:));
         o.img = im2double(o.img);
         o.Mu = 0;
         %o.img = o.img - o.Mu;
         o.Sigma = 1;
         %o.img = double(o.img)/o.Sigma;
-        %s = 100;
-        %if size(o.img,1) > size(o.img,2)
-        %    o.img = imresize(o.img, [nan, s]);
-        %else
-        %    o.img = imresize(o.img, [s, nan]);
-        %end
+        s = 100;
+        if size(o.img,1) > size(o.img,2)
+            o.img = imresize(o.img, [nan, s]);
+        else
+            o.img = imresize(o.img, [s, nan]);
+        end
         o.img0 = o.img;
 
         o.N = size(o.img);
@@ -37,8 +39,11 @@ methods
             else o.n1 = 8; o.n2 = 8; end
             if all(isfield(param, {'d1','d2'})), o.d1 = param.d1; o.d2 = param.d2;
             else o.d1 = 1; o.d2 = 1; end
+            if isfield(param, 'random'), o.random = param.random;
+            else o.random = 0; end
         else
             o.n1 = 8; o.n2 = 8; o.d1 = 1; o.d2 = 1;
+            o.random = false;
         end
         
         o.patches = o.patch(o.img);
@@ -48,6 +53,11 @@ methods
     
     function patches = patch(o, x)
         [I,J] = o.getCoords();
+        if o.random > 0
+            inds = randperm(length(I), o.random);
+            I = I(inds);
+            J = J(inds);
+        end
         K = length(I);
         
         patches = zeros(o.n1*o.n2*o.N(3), K);
