@@ -37,7 +37,7 @@ methods
         if isfield(mats, 'D'), o.D = mats.D; end
         if isfield(mats, 'S'), o.S = mats.S; end
         if isfield(mats, 'Z'), o.Z = mats.Z; end
-        o.Z = logical(o.Z);
+        o.Z = sparse(logical(o.Z));
           
         o.pie = min(0.99999, sum(o.Z,2)/o.N);
         o.gs = 1/cov(o.Z(:).*o.S(:));
@@ -74,9 +74,9 @@ methods
         %sig = (o.P + o.ge*sum(o.A.^2,2)').^-1;
         for k=K
             if nnz(o.Z(k,:))
-                xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.A(k,o.Z(k,:));
+                xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.S(k,o.Z(k,:));
                 sig = 1./(o.P + o.ge*sum(o.S(k,o.Z(k,:)).^2));
-                mu = o.ge*sig.*(xk*o.A(k,o.Z(k,:))');
+                mu = o.ge*sig.*(xk*o.S(k,o.Z(k,:))');
             else
                 sig = 1/o.P;
                 mu = zeros(o.P,1);
@@ -84,7 +84,7 @@ methods
             d = mvnrnd(mu,sig);
 
             if nnz(o.Z(k,:))
-                o.X(:,o.Z(k,:)) = o.X(:,o.Z(k,:)) + (d - o.D(:,k))*o.A(k,o.Z(k,:));
+                o.X(:,o.Z(k,:)) = o.X(:,o.Z(k,:)) + (d - o.D(:,k))*o.S(k,o.Z(k,:));
             end
             o.D(:,k) = d;
             %if nnz(o.Z(k,:)), o.R(:,o.Z(k,:)) = o.R(:,o.Z(k,:)) - o.D(:,k)*o.S(k,o.Z(k,:)); end
@@ -95,30 +95,14 @@ methods
         dtd = sum(o.D.^2)';
         sig = bsxfun(@times, o.gs + o.ge*o.Z, dtd).^-1;
         for k=K
-   %         sig = o.gs + zeros(1,o.N);
-   %         mu = zeros(1,o.N);
-   %         if nnz(o.Z(k,:))
-   %             xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.A(k,o.Z(k,:));
-   %             dtxk = o.D(:,k)'*xk;
-   %             sig(o.Z(k,:)) = 1/(o.gs + o.ge*dtd(k));
-   %             mu(o.Z(k,:)) = o.ge*sig(o.Z(k,:)).*dtxk;
-   %         else
-   %             sig = 1/o.gs;
-   %         end
-   %         s = randn(1,o.N).*sqrt(sig) + mu;
-   %         
-   %         o.X = o.X + o.D(:,k)*(s - o.S(k,:));
-   %         o.S(k,:) = s;
-   %         o.A(k,:) = s
-   %     end
-            xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.A(k,o.Z(k,:));
+            xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.S(k,o.Z(k,:));
             dtxk = o.D(:,k)'*xk;
             mu = zeros(1,o.N);
             mu(o.Z(k,:)) = o.ge*sig(k,o.Z(k,:)).*dtxk;
             s = randn(1,o.N).*sqrt(sig(k,:)) + mu;
             if nnz(o.Z(k,:))
-                o.X(:,o.Z(k,:)) = o.X(:,o.Z(k,:)) + o.D(:,k)*(s(o.Z(k,:)) - o.S(k,o.Z(k,:)));
-                o.A(k,o.Z(k,:)) = s(o.Z(k,:));
+                o.X(:,o.Z(k,:)) = o.X(:,o.Z(k,:))...
+                     + o.D(:,k)*(s(o.Z(k,:)) - o.S(k,o.Z(k,:)));
             end
             o.S(k,:) = s;
         end
@@ -128,15 +112,13 @@ methods
         dtd = sum(o.D.^2)';
         sdtd = bsxfun(@times, o.S.^2, dtd);
         for k=K
-            xk = o.Y - o.X + o.D(:,k)*o.A(k,:);
+            xk = o.Y - o.X + o.D(:,k)*(o.S(k,:).*o.Z(k,:));
             dtxk = o.D(:,k)'*xk;
-            p1 = o.pie(k)*exp(-o.ge/2*(sdtd(k,:) - 2*o.S(k,:).*dtxk));
+            p1 = o.pie(k)*exp(-0.5*o.ge*(sdtd(k,:) - 2*o.S(k,:).*dtxk));
             z = berrnd(p1./(1 - o.pie(k) + p1));
 
-            a = o.S(k,:).*z;
-            o.X = o.X + o.D(:,k)*(a - o.A(k,:));
+            o.X = o.X + o.D(:,k)*(o.S(k,:).*z - o.S(k,:).*o.Z(k,:));
             o.Z(k,:) = z;
-            o.A(k,:) = a;
         end
     end
     
