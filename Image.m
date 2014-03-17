@@ -15,23 +15,23 @@ methods
     function o = Image(img, param)
         if isnumeric(img), o.img = img; else o.img = imread(img); end
 
-        o.img = rgb2gray(o.img);
+        %o.img = rgb2gray(o.img);
         %o.img = im2double(o.img(1:1024,:));
         o.img = im2double(o.img);
         o.Mu = 0;
         %o.img = o.img - o.Mu;
         o.Sigma = 1;
         %o.img = double(o.img)/o.Sigma;
-        s = 100;
-        if size(o.img,1) > size(o.img,2)
-            o.img = imresize(o.img, [nan, s]);
-        else
-            o.img = imresize(o.img, [s, nan]);
-        end
+        %s = 100;
+        %if size(o.img,1) > size(o.img,2)
+        %    o.img = imresize(o.img, [nan, s]);
+        %else
+        %    o.img = imresize(o.img, [s, nan]);
+        %end
         o.img0 = o.img;
 
         o.N = size(o.img);
-        %o.img = max(0,min(1, o.img0 + 0.01*randn(o.N) ));
+        o.img = max(0,min(1, o.img0 + 0.15*randn(o.N) ));
 
         if length(o.N)==2, o.N(3) = 1; end
         if nargin>1

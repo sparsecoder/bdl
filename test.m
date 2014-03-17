@@ -12,7 +12,7 @@ eps = 0.05;
 X = normalize(X);
 Y = X + eps^0.5*randn(P,N);
 
-img = Image('cookie.jpg');
+img = Image('barbara256.png');
 
 %bpfa = BPFA(Y, X, K);
 bpfa = BPFA(img.patches, img.patches0, 128)

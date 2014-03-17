@@ -130,7 +130,8 @@ methods
     function sample_gs(o)
         %o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*sum(o.S(:).^2)) );
         %o.gs = gamrnd(o.c + nnz(o.Z), 1/(o.d + 0.5*sum((o.Z(:).*o.S(:)).^2)) );
-        o.gs = 1;
+        %o.gs = 1;
+        o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*(sum(o.S(:).^2) + o.N*o.K - nnz(o.Z)/o.gs) ));
     end
     
     function sample_pie(o)
