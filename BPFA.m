@@ -157,7 +157,7 @@ methods
                 fprintf('%4d: %6.0fs\t',i, t);
                 o.print();
                 [~,ind] = sort(sum(o.Z,2),'descend');
-                displayPatches(o.D(:,ind)); drawnow;
+                displayPatches(normalize(o.D(:,ind))); drawnow;
             end
         end
     end
@@ -170,7 +170,7 @@ methods
     end
 
     function e = psnr(o,x)
-        e = 20*log10(1/o.rms(x));
+        e = 10*log10(1/o.rms(x));
     end
     function e = rms(o, x)
         e = sqrt(sum(sum(x.^2))/numel(x)); 
