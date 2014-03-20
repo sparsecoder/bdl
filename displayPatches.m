@@ -61,6 +61,6 @@ for ii = 1:nBins
 end
 
 colormap('bone');
-imagesc(tmp);
+imshow(tmp, 'Border', 'tight');
 
 
