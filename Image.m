@@ -16,7 +16,7 @@ methods
         if isnumeric(img), o.img = img; else o.img = imread(img); end
 
         %o.img = rgb2gray(o.img);
-        o.img = im2double(o.img(1:1024,:));
+%         o.img = im2double(o.img(1:1024,:));
         %o.img = im2double(o.img);
         o.Mu = 0;
         %o.img = o.img - o.Mu;

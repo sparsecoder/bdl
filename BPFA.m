@@ -2,7 +2,7 @@ classdef BPFA<handle
 properties
     Y
     D,Z,S
-    X,A,R
+    X,R
     X0
     pie, gs, ge
     P,N,K
@@ -26,7 +26,7 @@ methods
         o.D = o.Y(:,randperm(o.N,2*o.K));
         [~,ind] = sort(std(o.D),'descend');
         o.D = o.D(:,ind(1:o.K));
-        displayPatches(o.D); drawnow;
+        %displayPatches(o.D); drawnow;
 
         o.S = o.D'*o.Y;
         o.Z = o.S > mean(o.S(:)) + 2.5*std(o.S(:));
@@ -43,7 +43,6 @@ methods
         o.gs = 1/cov(o.Z(:).*o.S(:));
         Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
         o.ge = 1;
-        o.A = o.S.*o.Z;
         o.X = o.D*(o.A);
         o.R = o.Y - o.X;
         o.check();
@@ -139,6 +138,10 @@ methods
         o.pie = betarnd(o.a/o.K + sumz, o.b*(o.K-1)/o.K + o.N - sumz);
     end
     
+    function A = A(o)
+        A = o.S.*o.Z;
+    end
+    
     function learn(o, T)
         if o.verbose
             s = ' ';
@@ -157,15 +160,15 @@ methods
                 fprintf('%4d: %6.0fs\t',i, t);
                 o.print();
                 [~,ind] = sort(sum(o.Z,2),'descend');
-                displayPatches(normalize(o.D(:,ind))); drawnow;
+                %displayPatches(normalize(o.D(:,ind))); drawnow;
             end
         end
     end
     
     function print(o)
         fprintf('%3.4e ',...
-        [o.rms(o.Y-o.D*(o.S.*o.Z)), o.rms(o.X0-o.D*(o.S.*o.Z)),...
-          o.gs^-0.5, o.ge^-0.5, nnz(o.Z)/numel(o.Z)] );
+        full([o.rms(o.Y-o.D*o.A), o.rms(o.X0-o.D*o.A),...
+          o.gs^-0.5, o.ge^-0.5, nnz(o.Z)/numel(o.Z)]) );
         fprintf('\n');
     end
 

@@ -15,7 +15,7 @@ Y = X + eps^0.5*randn(P,N);
 img = Image('barbara256.png');
 
 %bpfa = BPFA(Y, X, K);
-bpfa = BPFA(img.patches, img.patches0, 128)
+bpfa = BPFA(img.patches, img.patches, 12)
 
 %bpfa.D = D; bpfa.sampleD = false;
 %bpfa.ge = 1/eps;
