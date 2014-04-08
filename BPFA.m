@@ -1,190 +1,71 @@
-classdef BPFA<handle
-properties
-    Y
-    D,Z,S
-    X,A,R
-    X0
-    pie, gs, ge
-    P,N,K
-    a,b,c,d,e,f
-    ind
-    
-    sampleA=true, sampleD=true, sampleS=true, sampleZ=true
-    verbose = true
+classdef BPFA < handle 
 
+properties
+    Y,X0
+    X,R
+    D,S,Z
+    ge,gs,Pi
+    
+    K
+
+    gea = 1e-6, geb = 1e-6
+    gsa = 1e-6, gsb = 1e-6
+    pia,pib
+    
+    inferA = true
+    inferD = true
+    inferS = true, inferZ = true
+    inferGe = true, inferGs = true
 end
 
 methods
-    function o = BPFA(Y, X0, K)
-        o.Y = Y;
-        o.X0 = X0;
-        [o.P, o.N] = size(o.Y);
-        o.K = K;
-        o.a = o.K; o.b = 1;
-        o.c = 1e-6; o.d = 1e-6; o.e = 1e-6; o.f = 1e-6;
-        
-        o.D = o.Y(:,randperm(o.N,2*o.K));
-        [~,ind] = sort(std(o.D),'descend');
-        o.D = o.D(:,ind(1:o.K));
-        displayPatches(o.D); drawnow;
+    function o = BPFA(args)
+        o.Y = args.Y;
+        o.K = args.K;
+        if isfield(args, 'X'), o.X0 = args.X; else, o.X0 = args.Y; end
+        if isfield(args, 'D'), o.D = args.D; end
+        if isfield(args, 'S'), o.S = args.S; end
+        if isfield(args, 'Z'), o.Z = args.Z; end
+        o.Z = logical(o.Z);
 
-        o.S = o.D'*o.Y;
-        o.Z = o.S > mean(o.S(:)) + 2.5*std(o.S(:));
-        o.init(o)
+        if isfield(args, 'ge'), o.ge = args.ge; else, o.ge = 1; end
+        if isfield(args, 'gs'), o.gs = args.gs; else o.gs = 1; end
+        o.pia = o.K;
+        o.pib = 1;
+
+        if isfield(args, 'inferA'), o.inferA = args.inferA; end
+        if isfield(args, 'inferD'), o.inferD = args.inferD; end
+        if isfield(args, 'inferS'), o.inferS = args.inferS; end
+        if isfield(args, 'inferZ'), o.inferZ = args.inferZ; end
+        if isfield(args, 'inferGe'), o.inferGe = args.inferGe; end
+        if isfield(args, 'inferGs'), o.inferGs = args.inferGs; end
     end
 
-    function init(o, mats)
-        if isfield(mats, 'D'), o.D = mats.D; end
-        if isfield(mats, 'S'), o.S = mats.S; end
-        if isfield(mats, 'Z'), o.Z = mats.Z; end
-        o.Z = sparse(logical(o.Z));
-          
-        o.pie = min(0.99999, sum(o.Z,2)/o.N);
-        o.gs = 1/cov(o.Z(:).*o.S(:));
-        Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
-        o.ge = 1;
-        o.A = o.S.*o.Z;
-        o.X = o.D*(o.A);
-        o.R = o.Y - o.X;
-        o.check();
-    end
-    
-    function check(o)
-        if any(isnan([o.D(:); o.S(:)])) %; o.Z(:)])) z is boolean...
-            error('nan found');
-        end
-    end
-
-    function sample(o)
-        k = randperm(o.K);
-        if o.sampleD, o.sample_D(k); end
-
-        if o.sampleA
-            if o.sampleS, o.sample_S(k); end
-            if o.sampleZ, o.sample_Z(k); end
+    function learn(o)
+        for i = 1:20
+            o.R = o.Y - o.D*(o.S.*o.Z);
+            if o.inferGe, o.ge = o.sample_ge(); end
+            if o.inferGs, o.gs = o.sample_gs(); end
+            o.Pi = o.sample_pi();
         end
 
-        o.sample_pie();
-        o.sample_gs();
-        o.sample_ge();
+
     end
 
-    function sample_D(o,K)
-        %sig = bsxfun(@times, o.P + o.ge*sum(o.A'.^2), ones(o.P,o.K)).^-1;
-        %sig = (o.P + o.ge*sum(o.A.^2,2)').^-1;
-        for k=K
-            if nnz(o.Z(k,:))
-                xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.S(k,o.Z(k,:));
-                sig = 1./(o.P + o.ge*sum(o.S(k,o.Z(k,:)).^2));
-                mu = o.ge*sig.*(xk*o.S(k,o.Z(k,:))');
-            else
-                sig = 1/o.P;
-                mu = zeros(o.P,1);
-            end
-            d = mvnrnd(mu,sig);
+    function ge = sample_ge(o)
+        ge = gamrnd(o.gea + numel(o.Y)/2, 1/(o.geb + 0.5*sum(o.R(:).^2)) );
+    end
 
-            if nnz(o.Z(k,:))
-                o.X(:,o.Z(k,:)) = o.X(:,o.Z(k,:)) + (d - o.D(:,k))*o.S(k,o.Z(k,:));
-            end
-            o.D(:,k) = d;
-            %if nnz(o.Z(k,:)), o.R(:,o.Z(k,:)) = o.R(:,o.Z(k,:)) - o.D(:,k)*o.S(k,o.Z(k,:)); end
-        end
+    function gs = sample_gs(o)
+        gs = gamrnd(o.gsa + numel(o.S), 1/(o.gsb + 0.5*(sum(o.S(:).^2) + numel(o.S) - nnz(o.Z)/o.gs)) );
     end
-    
-    function sample_S(o,K)
-        dtd = sum(o.D.^2)';
-        sig = bsxfun(@times, o.gs + o.ge*o.Z, dtd).^-1;
-        for k=K
-            xk = o.Y(:,o.Z(k,:)) - o.X(:,o.Z(k,:)) + o.D(:,k)*o.S(k,o.Z(k,:));
-            dtxk = o.D(:,k)'*xk;
-            mu = zeros(1,o.N);
-            mu(o.Z(k,:)) = o.ge*sig(k,o.Z(k,:)).*dtxk;
-            s = randn(1,o.N).*sqrt(sig(k,:)) + mu;
-            if nnz(o.Z(k,:))
-                o.X(:,o.Z(k,:)) = o.X(:,o.Z(k,:))...
-                     + o.D(:,k)*(s(o.Z(k,:)) - o.S(k,o.Z(k,:)));
-            end
-            o.S(k,:) = s;
-        end
-    end
-    
-    function sample_Z(o,K)
-        dtd = sum(o.D.^2)';
-        sdtd = bsxfun(@times, o.S.^2, dtd);
-        for k=K
-            xk = o.Y - o.X + o.D(:,k)*(o.S(k,:).*o.Z(k,:));
-            dtxk = o.D(:,k)'*xk;
-            p1 = o.pie(k)*exp(-0.5*o.ge*(sdtd(k,:) - 2*o.S(k,:).*dtxk));
-            z = berrnd(p1./(1 - o.pie(k) + p1));
 
-            o.X = o.X + o.D(:,k)*(o.S(k,:).*z - o.S(k,:).*o.Z(k,:));
-            o.Z(k,:) = z;
-        end
-    end
-    
-    function sample_ge(o)
-        Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
-        o.ge = gamrnd(o.e + o.P*o.N/2, 1/(o.f + 0.5*sum(Err2(:))) );
-    end
-    
-    function sample_gs(o)
-        %o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*sum(o.S(:).^2)) );
-        %o.gs = gamrnd(o.c + nnz(o.Z), 1/(o.d + 0.5*sum((o.Z(:).*o.S(:)).^2)) );
-        %o.gs = 1;
-        o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*(sum(o.S(:).^2) + o.N*o.K - nnz(o.Z)/o.gs) ));
-    end
-    
-    function sample_pie(o)
+    function Pi = sample_pi(o)
         sumz = sum(o.Z,2);
-        o.pie = betarnd(o.a/o.K + sumz, o.b*(o.K-1)/o.K + o.N - sumz);
+        Pi = betarnd(o.pia/o.K + sumz, o.pib*(o.K-1)/o.K + size(o.Y,2) - sumz);
     end
-    
-    function learn(o, T)
-        if o.verbose
-            s = ' ';
-            fprintf('iter:\ttime\tpsnr%*cpsnr0%*csds%*csde%*cZfill\n',...
-                8,s,6,s,8,s,8,s);
-            fprintf('%4d: %6.0fs\t', 0, 0);
-            o.print();
-        end
-
-        t=0;
-        for i=1:T
-            tic
-            o.sample();
-            t=t+toc;
-            if o.verbose
-                fprintf('%4d: %6.0fs\t',i, t);
-                o.print();
-                [~,ind] = sort(sum(o.Z,2),'descend');
-                displayPatches(normalize(o.D(:,ind))); drawnow;
-            end
-        end
-    end
-    
-    function print(o)
-        fprintf('%3.4e ',...
-        [o.rms(o.Y-o.D*(o.S.*o.Z)), o.rms(o.X0-o.D*(o.S.*o.Z)),...
-          o.gs^-0.5, o.ge^-0.5, nnz(o.Z)/numel(o.Z)] );
-        fprintf('\n');
-    end
-
-    function e = psnr(o,x)
-        e = 10*log10(1/o.rms(x));
-    end
-    function e = rms(o, x)
-        e = sqrt(sum(sum(x.^2))/numel(x)); 
-    end
-    
-end
 
 end
 
-function r = berrnd(p)
-    r = rand(size(p)) < p;
-end
-
-function r = mvnrnd(mu,sigma)
-    r = randn(size(mu)).*sqrt(sigma) + mu; 
 end
 
