@@ -46,7 +46,9 @@ methods
             o.random = false;
         end
         
-        o.patches = o.patch(o.img);
+        if any(o.img(:) ~= 0)
+            o.patches = o.patch(o.img);
+        end
        % o.patches0 = o.patch(o.img0);
         % o.normalize();
     end
