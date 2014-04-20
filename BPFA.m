@@ -114,7 +114,7 @@ methods
             xk = o.Y - o.X + o.D(:,k)*(o.S(k,:).*o.Z(k,:));
             dtxk = o.D(:,k)'*xk;
             p1 = o.pie(k)*exp(-0.5*o.ge*(sdtd(k,:) - 2*o.S(k,:).*dtxk));
-            z = berrnd(p1./(1 - o.pie(k) + p1));
+            z = rand(size(p1)) > ((1 - o.pie(k))./(1 - o.pie(k) + p1));
 
             o.X = o.X + o.D(:,k)*(o.S(k,:).*z - o.S(k,:).*o.Z(k,:));
             o.Z(k,:) = z;
@@ -129,8 +129,8 @@ methods
     function sample_gs(o)
         %o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*sum(o.S(:).^2)) );
         %o.gs = gamrnd(o.c + nnz(o.Z), 1/(o.d + 0.5*sum((o.Z(:).*o.S(:)).^2)) );
-        %o.gs = 1;
-        o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*(sum(o.S(:).^2) + o.N*o.K - nnz(o.Z)/o.gs) ));
+        o.gs = 1;
+        %o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*(sum(o.S(:).^2) + o.N*o.K - nnz(o.Z)/o.gs) ));
     end
     
     function sample_pie(o)
