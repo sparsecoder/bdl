@@ -2,7 +2,7 @@ classdef BPFA<handle
 properties
     Y
     D,Z,S
-    X,R
+    X,A,R
     X0
     pie, gs, ge
     P,N,K
@@ -26,7 +26,7 @@ methods
         o.D = o.Y(:,randperm(o.N,2*o.K));
         [~,ind] = sort(std(o.D),'descend');
         o.D = o.D(:,ind(1:o.K));
-        %displayPatches(o.D); drawnow;
+        displayPatches(o.D); drawnow;
 
         o.S = o.D'*o.Y;
         o.Z = o.S > mean(o.S(:)) + 2.5*std(o.S(:));
@@ -43,6 +43,7 @@ methods
         o.gs = 1/cov(o.Z(:).*o.S(:));
         Err2 = (o.Y - o.D*(o.S.*o.Z)).^2;
         o.ge = 1;
+        o.A = o.S.*o.Z;
         o.X = o.D*(o.A);
         o.R = o.Y - o.X;
         o.check();
@@ -114,7 +115,7 @@ methods
             xk = o.Y - o.X + o.D(:,k)*(o.S(k,:).*o.Z(k,:));
             dtxk = o.D(:,k)'*xk;
             p1 = o.pie(k)*exp(-0.5*o.ge*(sdtd(k,:) - 2*o.S(k,:).*dtxk));
-            z = rand(size(p1)) > ((1 - o.pie(k))./(1 - o.pie(k) + p1));
+            z = berrnd(p1./(1 - o.pie(k) + p1));
 
             o.X = o.X + o.D(:,k)*(o.S(k,:).*z - o.S(k,:).*o.Z(k,:));
             o.Z(k,:) = z;
@@ -129,17 +130,13 @@ methods
     function sample_gs(o)
         %o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*sum(o.S(:).^2)) );
         %o.gs = gamrnd(o.c + nnz(o.Z), 1/(o.d + 0.5*sum((o.Z(:).*o.S(:)).^2)) );
-        o.gs = 1;
-        %o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*(sum(o.S(:).^2) + o.N*o.K - nnz(o.Z)/o.gs) ));
+        %o.gs = 1;
+        o.gs = gamrnd(o.c + o.K*o.N, 1/(o.d + 0.5*(sum(o.S(:).^2) + o.N*o.K - nnz(o.Z)/o.gs) ));
     end
     
     function sample_pie(o)
         sumz = sum(o.Z,2);
         o.pie = betarnd(o.a/o.K + sumz, o.b*(o.K-1)/o.K + o.N - sumz);
-    end
-    
-    function A = A(o)
-        A = o.S.*o.Z;
     end
     
     function learn(o, T)
@@ -160,15 +157,15 @@ methods
                 fprintf('%4d: %6.0fs\t',i, t);
                 o.print();
                 [~,ind] = sort(sum(o.Z,2),'descend');
-                %displayPatches(normalize(o.D(:,ind))); drawnow;
+                displayPatches(normalize(o.D(:,ind))); drawnow;
             end
         end
     end
     
     function print(o)
         fprintf('%3.4e ',...
-        full([o.rms(o.Y-o.D*o.A), o.rms(o.X0-o.D*o.A),...
-          o.gs^-0.5, o.ge^-0.5, nnz(o.Z)/numel(o.Z)]) );
+        [o.rms(o.Y-o.D*(o.S.*o.Z)), o.rms(o.X0-o.D*(o.S.*o.Z)),...
+          o.gs^-0.5, o.ge^-0.5, nnz(o.Z)/numel(o.Z)] );
         fprintf('\n');
     end
 
