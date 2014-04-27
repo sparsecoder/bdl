@@ -72,7 +72,7 @@ imwrite(lrStkTest, 'lrStkTest.pdf', 'pdf')
 W = (SH.*ZH)/(SL.*ZL);
 W2 = (SL.*ZL)/(SH.*ZH);
 
-[~, StrainR, ZtrainR, ~, ~, ~] = foo(lrTrain2.patches,K, iter, false, DLR*W2, [], gsRH, PiRH);
+[~, StrainR, ZtrainR, ~, ~, ~] = foo(lrTrain2.patches,K, iter, DLR*W2, [], gsRH, PiRH);
 lrRegTrain = hrTrain2.recon( DHR*(StrainR.*ZtrainR) );
 imshow(lrRegTrain, 'Border', 'tight');
 saveas(gcf,'lrReg.pdf')
