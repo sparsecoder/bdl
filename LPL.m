@@ -42,7 +42,7 @@ parfor i=1:N
     
     x = xH(:,i);
     x2 = sqrt(x);
-    A = diag(lambda(:,i)) + bsxfun(@times,bsxfun(@times,DTD,x2),x2');
+    A = diag(lambda(:,i)) + bsxfun(@times,bsxfun(@times,  DTD,x2),x2'  ); %X^.5*DTD*X^.5
     xH(:,i) = abs(x2.*pcg(A, x2.*xH0(:,i), [],[], diag(1 + x)));
     
     fprintf('%d\t%f\n',i, toc)
