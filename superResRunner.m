@@ -6,7 +6,7 @@ fname = 'stem/GTO-LSAT-49_5_20.tif';
 lr = im2double(imread(fname));
 lr = lr(1:1024,:);
 
-%lr = lr((1:256)+256,1:256);
+lr = lr((1:512)+256,(1:512));
 %lr = lr(101:116+16, (101:116+16)-30);
 
 % lrImg = Image(lr, struct('n1',16,'n2',16,'d1',8,'d2',8));
@@ -19,7 +19,8 @@ tic
 [xH, xH0, lambda] = LPL(lr, scale);
 toc
 xH = abs(xH);
-imwrite(xH/max(xH(:)), 'srLPL.png', 'png')
+imagesc(xH)
+%imwrite(xH/max(xH(:)), 'srLPL.png', 'png')
 
 
 %[n,~] = size(lr); %square...
